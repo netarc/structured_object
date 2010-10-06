@@ -5,4 +5,7 @@ en:
 # Translations for exception classes
 #-------------------------------------------------------------------------------
     errors:
-
+      attribute_exists: "Attribute `%{attribute}` already exists in structure: %{klass}"
+      attribute_invalid: "Expected an Symbol denoting an attribute not: %{type}"
+      expected_hash: "Expected hash config param not: %{param}"
+      unknown_type: "Unknown type `%{type}` encountered"

@@ -11,8 +11,7 @@ class StructuredObject
       @read_type_key = :"read_#{type_name}"
       @write_type_key = :"write_#{type_name}"
 
-      default_value = opts[:default] || 0
-      default_value = @instance._resolve_proxy(default_value)
+      default_value = StructuredObject::Tools.resolve_proxy(@instance, opts[:default] || 0)
 
       @buffer_opts = {}
       @buffer_opts[:endian] = opts[:endian] if [:big_endian, :little_endian].include?(opts[:endian])

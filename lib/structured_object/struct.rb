@@ -10,7 +10,7 @@ class StructuredObject
     @@valid_keys_for_struct = [:size, :length, :endian]
     def struct(attribute, *args, &block)
       options = args.last.is_a?(::Hash) ? args.pop : {}
-      Tools::assert_valid_keys(options, @@valid_keys_for_struct)
+      Tools.assert_valid_keys(options, @@valid_keys_for_struct)
 
       if block_given?
         klass = Class.new(StructuredObject)
@@ -32,7 +32,7 @@ class StructuredObject
 
     @@valid_keys_for_type = [:default, :size, :length, :endian]
     def type(attribute, type, options={})
-      Tools::assert_valid_keys(options, @@valid_keys_for_type)
+      Tools.assert_valid_keys(options, @@valid_keys_for_type)
 
       # We accept attribute as an Array for a shortcut to declaring multiple types of the same type
       if attribute.is_a?(::Array)

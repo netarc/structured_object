@@ -9,35 +9,34 @@ class StructuredObject
       @instance = instance
       @type_klass = nil
       @type = @format[0]
-      @options = @format[2]
-
-      @size = @options[:size] || nil
-      unless @size.nil?
-        @size = @instance._resolve_proxy(@size)
-
-        raise StandardError.new("An array size must be specified in Numeric format") unless @size.is_a?(::Numeric)
-        raise StandardError.new("An array cannot have a size less than 1") if @size < 1
-        @size = @size.floor
-      end
-
-      @length = @options[:length] || nil
-      unless @length.nil?
-        @length = @instance._resolve_proxy(@length)
-
-        raise StandardError.new("An array length must be specified in Numeric format") unless @length.is_a?(::Numeric)
-        raise StandardError.new("An array cannot ave a size less than 0") if @length < 0
-        @length = @length.floor
-      end
-
       @data = []
+      options = @format[2]
+
+      @options = {
+        :size => StructuredObject::Tools.resolve_proxy(@instance, options[:size] || nil),
+        :length => StructuredObject::Tools.resolve_proxy(@instance, options[:length] || nil)
+      }
+
+      unless @options[:size].nil?
+        raise StandardError.new("An array size must be specified in Numeric format") unless @options[:size].is_a?(::Numeric)
+        raise StandardError.new("An array cannot have a size less than 1") if @options[:size] < 1
+        @options[:size] = @options[:size].floor
+      end
+
+      unless @options[:length].nil?
+        raise StandardError.new("An array length must be specified in Numeric format") unless @options[:length].is_a?(::Numeric)
+        raise StandardError.new("An array cannot ave a size less than 0") if @options[:length] < 0
+        @options[:length] = @options[:length].floor
+      end
+
       if @type == :type
         @type_klass = StructuredObject::Value
       elsif @type == :struct
         @type_klass = @format[1]
       end
 
-      unless @size.nil?
-        @size.times.each do
+      unless @options[:size].nil?
+        @options[:size].times.each do
           @data << self.new
         end
       end
@@ -69,21 +68,20 @@ class StructuredObject
     private :_enforce!
 
 
-    def size
-      to_a.size
-    end
-    alias :length :size
-
+    # required for Enumerable
     def each
-      to_a.each do |x|
-        yield x
-      end
+      to_a.each {|x| yield x}
     end
+
 
     def to_a
       @data
     end
-    alias :entries :to_a
+
+    def size
+      to_a.size
+    end
+    alias :length :size
 
     def [](index)
       result = to_a[index]
@@ -100,7 +98,7 @@ class StructuredObject
     #  - in a fixed array size, the element being removed is replaced with a fresh/default instance
     def pop
       res = @data.pop
-      @data.push self.new unless @size.nil?
+      @data.push self.new unless @options[:size].nil?
       res
     end
 
@@ -108,7 +106,7 @@ class StructuredObject
     #  - in a fixed array size, the element being removed is replaced with a fresh/default instance
     def shift
       res = @data.shift
-      @data.unshift self.new unless @size.nil?
+      @data.unshift self.new unless @options[:size].nil?
       res
     end
 
@@ -125,14 +123,18 @@ class StructuredObject
     #  - in a fixed array size, the element at the front is bumped off
     def push(item)
       item = _enforce!(item)
-      @data.shift unless @size.nil?
+      @data.shift unless @options[:size].nil?
       @data.push item
       self
     end
     alias :<< :push
 
     def inspect
-      "<StructuredObject::Array:0x#{'%x' % (self.object_id << 1)} #{to_a.inspect}>"
+      if @type == :type
+        "<StructuredObject::Array:0x#{'%x' % (self.object_id << 1)} #{@format[1]}::#{to_a.inspect}>"
+      else
+        "<StructuredObject::Array:0x#{'%x' % (self.object_id << 1)} #{to_a.inspect}>"
+      end
     end
   end
 end

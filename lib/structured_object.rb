@@ -47,14 +47,6 @@ class StructuredObject
       "#<#{self.class}:0x#{'%x' % (self.object_id << 1)} #{key_values.map{|e| e.join('=')}.join(' ')}>"
     end
 
-    # This will allow a Proc && Symbol to be matched against ourself for a potential value
-    # otherwise simply return the value
-    def _resolve_proxy(value)
-      value = instance_eval(&value) if value.is_a?(::Proc)
-      value = send(value) if value.is_a?(::Symbol)
-      value
-    end
-
     module ClassMethods
       @@structured_formats = Hash.new { |hash, key| hash[key] = Struct.new(key) }
       def structured_format

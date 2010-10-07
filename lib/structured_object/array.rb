@@ -7,14 +7,11 @@ class StructuredObject
       puts "Creating Array with format: #{format.inspect}"
       @format = format
       @instance = instance
-
-      @type = @format[0]
       @type_klass = nil
+      @type = @format[0]
+      @options = @format[2]
 
-      @type_name = @format[1]
-      options = @format[2]
-
-      @size = options[:size] || nil
+      @size = @options[:size] || nil
       unless @size.nil?
         @size = @instance._resolve_proxy(@size)
 
@@ -23,58 +20,59 @@ class StructuredObject
         @size = @size.floor
       end
 
-      @length = options[:length] || nil
+      @length = @options[:length] || nil
       unless @length.nil?
         @length = @instance._resolve_proxy(@length)
 
         raise StandardError.new("An array length must be specified in Numeric format") unless @length.is_a?(::Numeric)
-        raise StandardError.new("An array length have a size less than 1") if @length < 1
+        raise StandardError.new("An array cannot ave a size less than 0") if @length < 0
         @length = @length.floor
       end
 
       @data = []
       if @type == :type
-        # TODO: Rethink this? maybe use StructuredObject::Value somehow?
-        @read_type_key = :"read_#{@type_name}"
-        @write_type_key = :"write_#{@type_name}"
-
-        @buffer = ::ByteBuffer.new
-
-        unless @size.nil?
-          @size.times.each do
-            @buffer.send(@write_type_key, 0)
-          end
-          @buffer.rewind!
-          @size.times.each do
-            @data << @buffer.send(@read_type_key)
-          end
-        end
+        @type_klass = StructuredObject::Value
       elsif @type == :struct
-        @type_klass = @type_name
+        @type_klass = @format[1]
+      end
 
-#        puts " - creating instances of #{@type_klass}"
-        unless @size.nil?
-          @size.times.each do
-            @data << self.new
-          end
+      unless @size.nil?
+        @size.times.each do
+          @data << self.new
         end
-#        puts " - end"
       end
     end
 
-    # Return a new instance of our Struct object
+    # Return a new instance of our Struct new
     def new
       raise StandardError.new("No valid struct is present, unable to create new instance") if @type_klass.nil?
-      instance = @type_klass.new
-      instance.send :initialize_structured_object
+      instance = nil
+      if @type == :type
+        instance = @type_klass.new(@instance, @format)
+      elsif @type == :struct
+        instance = @type_klass.new
+        instance.send :initialize_structured_object
+      end
       instance
     end
 
-    def _type_item(item)
-      raise StandardError.new("Unexpected item of #{item.class}, Expecting item of struct #{@type_klass}") if !@type_klass.nil? && !item.is_a?(@type_klass)
+    def _enforce!(item)
+      if @type == :type
+        unless item.is_a?(@type_klass)
+          item = self.new.tap {|i| i.value = item}
+        end
+      else
+        raise StandardError.new("Unexpected item of #{item.class}, Expecting item of struct #{@type_klass}") if !item.is_a?(@type_klass)
+      end
+      item
     end
-    private :_type_item
+    private :_enforce!
 
+
+    def size
+      to_a.size
+    end
+    alias :length :size
 
     def each
       to_a.each do |x|
@@ -86,6 +84,17 @@ class StructuredObject
       @data
     end
     alias :entries :to_a
+
+    def [](index)
+      result = to_a[index]
+      result = result.value if result.respond_to?(:value)
+      result
+    end
+
+    def []=(index, item)
+      raise StandardError.new("unsupported") unless @type == :type
+      to_a[index].value = item
+    end
 
     # Remove last element in array
     #  - in a fixed array size, the element being removed is replaced with a fresh/default instance
@@ -106,7 +115,7 @@ class StructuredObject
     # Add specified item to front of array
     #  - in a fixed array size, the element at the end is bumped off
     def unshift(item)
-      _type_item(item)
+      item = _enforce!(item)
       @data.pop unless @size.nil?
       @data.unshift(item)
       self
@@ -115,12 +124,12 @@ class StructuredObject
     # Add specified item to end of array
     #  - in a fixed array size, the element at the front is bumped off
     def push(item)
-      _type_item(item)
+      item = _enforce!(item)
       @data.shift unless @size.nil?
       @data.push item
       self
     end
-    alias :< :push
+    alias :<< :push
 
     def inspect
       "<StructuredObject::Array:0x#{'%x' % (self.object_id << 1)} #{to_a.inspect}>"

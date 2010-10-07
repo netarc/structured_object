@@ -40,6 +40,11 @@ class StructuredObject
       end
     end
 
+    class ArgumentError < StructuredObjectError
+      status_code(1)
+      error_key(:argument_error)
+    end
+
     class AttributeExists < StructuredObjectError
       status_code(2)
       error_key(:attribute_exists)
@@ -53,6 +58,11 @@ class StructuredObject
     class ExpectedHash < StructuredObjectError
       status_code(15)
       error_key(:expected_hash)
+    end
+
+    class StructExpectedClass < StructuredObjectError
+      status_code(30)
+      error_key(:struct_expected_class)
     end
 
     class UnknownType < StructuredObjectError

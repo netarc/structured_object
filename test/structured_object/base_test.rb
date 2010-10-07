@@ -21,14 +21,14 @@ class BaseTest < Test::Unit::TestCase
     #
     struct do
       # a fixed array of 3-bytes
-      byte   :id, :size => 3
+      byte   :id, :length => 0
 
       # a 16-bit unsigned integer which value is read-only
 #      uint16 :size, :read => lambda { blocks.size }
       # an un-fixed array of objects of size :struct
-      struct :blocks, :size => 3 do
-        byte [:x,:y,:z]
-      end
+#      struct :blocks, :size => 3 do
+#        byte [:x,:y,:z]
+#      end
     end
   end
 
@@ -67,18 +67,15 @@ class BaseTest < Test::Unit::TestCase
       foo = Foo.new
       puts "created foo\n\r"
 
-      puts "found blocks: #{foo.blocks.inspect}"
-      instance = foo.blocks.new
-      instance.x = 2
+      puts "foo id: #{foo.id.inspect}"
+      puts "foo id: #{foo.id.size}"
+      foo.id << 1
+      foo.id << 5
+      foo.id << 321
+      foo.id << 123
+      puts "foo id: #{foo.id.inspect}"
+      puts "foo id: #{foo.id.size}"
 
-#      foo.blocks << instance
-#      puts "found blocks: #{foo.blocks.inspect}"
-
-      foo.blocks.unshift(instance)
-      puts "found blocks: #{foo.blocks.inspect}"
-
-      foo.blocks.pop
-      puts "found blocks: #{foo.blocks.inspect}"
      end
   end
 end

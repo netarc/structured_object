@@ -30,5 +30,9 @@ class StructuredObject
       @buffer.reset!
       @buffer.send(@write_type_key, v, @buffer_opts)
     end
+
+    def inspect
+      value
+    end
   end
 end

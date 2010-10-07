@@ -5,6 +5,7 @@ class StructuredObject
   autoload :Array,   'structured_object/array'
   autoload :Errors,  'structured_object/errors'
   autoload :Struct,  'structured_object/struct'
+  autoload :Tools,   'structured_object/tools'
   autoload :Value,   'structured_object/value'
 
   module Base

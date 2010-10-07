@@ -7,19 +7,20 @@ class StructuredObject
       @current_block = @struct_format
     end
 
-    # A Structure attribute
+    @@valid_keys_for_struct = [:size, :length, :endian]
     def struct(attribute, *args, &block)
       options = args.last.is_a?(::Hash) ? args.pop : {}
-      klass = args.pop
-      klass = klass.call if klass.is_a?(::Proc)
+      Tools::assert_valid_keys(options, @@valid_keys_for_struct)
 
       if block_given?
         klass = Class.new(StructuredObject)
         @klass.const_set("Struct#{attribute.to_s.capitalize}", klass)
         klass.structured_format.instance_eval &block
+      else
+        klass = args.pop
+        klass = klass.call if klass.is_a?(::Proc)
+        raise Errors::StructExpectedClass.new if klass.nil?
       end
-
-      raise StandardError.new("A struct needs a block or specified struct to define itself") if klass.nil?
 
       @current_block.merge!({attribute => [:struct, klass, options]})
 
@@ -29,9 +30,9 @@ class StructuredObject
       end
     end
 
-    # A simple value attribute
+    @@valid_keys_for_type = [:default, :size, :length, :endian]
     def type(attribute, type, options={})
-      raise Errors::UnknownType.new(:type => type) unless ByteBuffer.known_types.include?(type)
+      Tools::assert_valid_keys(options, @@valid_keys_for_type)
 
       # We accept attribute as an Array for a shortcut to declaring multiple types of the same type
       if attribute.is_a?(::Array)
@@ -39,8 +40,9 @@ class StructuredObject
         return
       end
 
-      raise Errors::AttributeInvalid.new(:type => attribute.class) unless attribute.is_a?(::Symbol)
+      raise Errors::AttributeInvalid.new(:type => type,:klass => attribute.class) unless attribute.is_a?(::Symbol)
       raise Errors::AttributeExists.new(:attribute => attribute, :klass => @klass) if @current_block.has_key?(attribute)
+      raise Errors::UnknownType.new(:type => type) unless ByteBuffer.known_types.include?(type)
 
       @current_block.merge!({attribute => [:type, type, options]})
 
@@ -59,9 +61,9 @@ class StructuredObject
 
     # method_missing is assuming we are trying to mean a type. (IE byte, char, int8, etc..)
     def method_missing(*args)
-      type = args[0].to_sym
+      options = args.last.is_a?(::Hash) ? args.pop : {}
       attribute = args[1]
-      options = args[2] || {}
+      type = args[0]
 
       type(attribute, type, options)
     end

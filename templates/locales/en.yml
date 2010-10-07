@@ -5,7 +5,9 @@ en:
 # Translations for exception classes
 #-------------------------------------------------------------------------------
     errors:
+      argument_error: "Unknown key(s): %{keys}"
       attribute_exists: "Attribute `%{attribute}` already exists in structure: %{klass}"
-      attribute_invalid: "Expected an Symbol denoting an attribute not: %{type}"
+      attribute_invalid: "Expected symbol denoting attribute `%{type}` not: %{klass}"
       expected_hash: "Expected hash config param not: %{param}"
+      struct_expected_class: "Expected a class passed to struct since no block defining a struct was given"
       unknown_type: "Unknown type `%{type}` encountered"

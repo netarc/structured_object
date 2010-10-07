@@ -25,7 +25,7 @@ class TypeTest < Test::Unit::TestCase
     end
   end
 
-  context "types declarations in structs" do
+  context "type declarations in structs" do
     should "accept individual type declarations" do
       foo = Foo.new
 

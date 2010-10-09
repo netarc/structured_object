@@ -36,8 +36,15 @@ class StructuredObject
       end
 
       unless @options[:size].nil?
-        @options[:size].times.each do
-          @data << self.new
+        if @type == :type
+          value_helper = self.new
+          @options[:size].times.each do
+            @data << value_helper.value
+          end
+        elsif @type == :struct
+          @options[:size].times.each do
+            @data << self.new
+          end
         end
       end
     end
@@ -67,67 +74,50 @@ class StructuredObject
     end
     private :_enforce!
 
+    def _valueize!(result)
+      if result.is_a?(::Array)
+        result = result.collect {|n| n.respond_to?(:value) ? n.value : n}
+      else
+        result = result.value if result.respond_to?(:value)
+      end
+      result
+    end
+    private :_valueize!
 
     # required for Enumerable
     def each
       to_a.each {|x| yield x}
     end
 
-
     def to_a
+      new_data = []
+      if @type == :type
+        value_helper = self.new
+
+        @data.each do |element|
+          value_helper.value = element
+          new_data << value_helper.value
+        end
+      else
+#       raise StandardError.new("unsupported") unless @type == :type
+      end
+      @data = new_data
       @data
     end
 
-    def size
-      to_a.size
-    end
-    alias :length :size
-
-    def [](index)
-      result = to_a[index]
-      result = result.value if result.respond_to?(:value)
-      result
+    # Helper to reduce the bulk of forwarded methods
+    def self.forwarded_method(method)
+      if method.is_a?(::Array)
+        method.each {|m| forwarded_method(m) }
+        return
+      end
+      define_method(method) {|*args| to_a.send(method, *args)}
     end
 
-    def []=(index, item)
-      raise StandardError.new("unsupported") unless @type == :type
-      to_a[index].value = item
-    end
-
-    # Remove last element in array
-    #  - in a fixed array size, the element being removed is replaced with a fresh/default instance
-    def pop
-      res = @data.pop
-      @data.push self.new unless @options[:size].nil?
-      res
-    end
-
-    # Remove first element in array
-    #  - in a fixed array size, the element being removed is replaced with a fresh/default instance
-    def shift
-      res = @data.shift
-      @data.unshift self.new unless @options[:size].nil?
-      res
-    end
-
-    # Add specified item to front of array
-    #  - in a fixed array size, the element at the end is bumped off
-    def unshift(item)
-      item = _enforce!(item)
-      @data.pop unless @size.nil?
-      @data.unshift(item)
-      self
-    end
-
-    # Add specified item to end of array
-    #  - in a fixed array size, the element at the front is bumped off
-    def push(item)
-      item = _enforce!(item)
-      @data.shift unless @options[:size].nil?
-      @data.push item
-      self
-    end
-    alias :<< :push
+    # Forward Array methods
+    forwarded_method([:[], :[]=, :<<, :==,:at, :choice, :fetch, :first, :include?, :index, :join, :last,
+                      :length, :pop, :push, :reject, :reverse, :rindex, :shift, :shuffle, :size, :slice,
+                      :take, :uniq, :unshift, :values_at])
 
     def inspect
       if @type == :type

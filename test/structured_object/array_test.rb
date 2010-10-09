@@ -4,6 +4,10 @@ class ArrayTest < Test::Unit::TestCase
   class Foo < StructuredObject
     struct do
       byte :bar, :size => 3, :default => 123
+
+      struct :blocks, :size => 3 do
+        byte :x, :default => 321
+      end
     end
   end
 
@@ -28,4 +32,5 @@ class ArrayTest < Test::Unit::TestCase
       assert_equal 23, foo.bar[2]
     end
   end
+
 end

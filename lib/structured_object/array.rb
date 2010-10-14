@@ -4,7 +4,7 @@ class StructuredObject
     include Enumerable
 
     def initialize(instance, format=[])
-      puts "Creating Array with format: #{format.inspect}"
+#      puts "Creating Array with format: #{format.inspect}"
       @format = format
       @instance = instance
       @type_klass = nil
@@ -62,35 +62,42 @@ class StructuredObject
       instance
     end
 
-    def _enforce!(item)
-      if @type == :type
-        unless item.is_a?(@type_klass)
-          item = self.new.tap {|i| i.value = item}
-        end
-      else
-        raise StandardError.new("Unexpected item of #{item.class}, Expecting item of struct #{@type_klass}") if !item.is_a?(@type_klass)
-      end
-      item
+    # Set our array to new values
+    def value=(new_value)
+      @data = new_value
     end
-    private :_enforce!
 
-    def _valueize!(result)
-      if result.is_a?(::Array)
-        result = result.collect {|n| n.respond_to?(:value) ? n.value : n}
-      else
-        result = result.value if result.respond_to?(:value)
+    # Enforce the size constraints on the array
+    def _enforce_size!(position=:else)
+      if @type == :type
+        unless @options[:size].nil?
+          # Ensure we are at min size
+          value_helper = self.new
+          while @data.size < @options[:size]
+            @data << value_helper.value
+          end
+          # Ensure we are at miax size
+          while @data.size > @options[:size]
+            if position == :start
+              @data.shift
+            else
+              @data.pop
+            end
+          end
+        end
       end
-      result
     end
-    private :_valueize!
+    private :_enforce_size!
 
     # required for Enumerable
     def each
       to_a.each {|x| yield x}
     end
 
+    # Return our data array, this will enforce our array to its type
     def to_a
       new_data = []
+
       if @type == :type
         value_helper = self.new
 
@@ -98,26 +105,47 @@ class StructuredObject
           value_helper.value = element
           new_data << value_helper.value
         end
-      else
-#       raise StandardError.new("unsupported") unless @type == :type
+
+        @data = new_data
+        _enforce_size!
+      elsif @type == :struct
+        puts "converting struct array to array"
+        #       raise StandardError.new("unsupported") unless @type == :type
       end
-      @data = new_data
       @data
     end
 
     # Helper to reduce the bulk of forwarded methods
-    def self.forwarded_method(method)
+    def self.forward_read_method(method)
       if method.is_a?(::Array)
-        method.each {|m| forwarded_method(m) }
+        method.each {|m| forward_read_method(m) }
         return
       end
-      define_method(method) {|*args| to_a.send(method, *args)}
+      define_method(method) do |*args|
+        result = to_a.send(method, *args)
+      end
     end
 
-    # Forward Array methods
-    forwarded_method([:[], :[]=, :<<, :==,:at, :choice, :fetch, :first, :include?, :index, :join, :last,
-                      :length, :pop, :push, :reject, :reverse, :rindex, :shift, :shuffle, :size, :slice,
-                      :take, :uniq, :unshift, :values_at])
+    # Helper to reduce the bulk of forwarded methods that need to be enforced
+    def self.forward_write_method(munge)
+      munge.each_pair do |key, methods|
+        methods.each do |method|
+          define_method(method) do |*args|
+            result = @data.send(method, *args)
+            _enforce_size!(key)
+            result
+          end
+        end
+      end
+    end
+
+    # Forward Array read methods
+    forward_read_method([:[], :==,:at, :choice, :fetch, :first, :include?, :index, :join, :last,
+                      :length, :reject, :reverse, :rindex, :shuffle, :size, :slice,
+                      :take, :uniq, :values_at])
+
+    # Forward Array write methods, these access our raw array
+    forward_write_method({:start => [:[]=, :<<], :else => [:pop, :push, :shift, :slice!, :unshift]})
 
     def inspect
       if @type == :type

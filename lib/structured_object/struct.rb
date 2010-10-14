@@ -28,6 +28,10 @@ class StructuredObject
         initialize_structured_object
         @structured_object[:"#{attribute}"]
       end
+      @klass.send(:define_method, :"#{attribute}=") do |value|
+        initialize_structured_object
+        @structured_object[:"#{attribute}"].value = value
+      end
     end
 
     @@valid_keys_for_type = [:default, :size, :length, :endian]

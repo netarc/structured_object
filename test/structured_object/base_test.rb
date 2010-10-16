@@ -65,16 +65,6 @@ class BaseTest < Test::Unit::TestCase
   context "initialization" do
     should "create from base class" do
       foo = Foo.new
-      puts "created foo\n\r"
-
-      puts "foo id: #{foo.id.inspect}"
-      puts "foo id: #{foo.id.size}"
-      foo.id << 1
-      foo.id << 5
-      foo.id << 321
-      foo.id << 123
-      puts "foo id: #{foo.id.inspect}"
-      puts "foo id: #{foo.id.size}"
 
      end
   end

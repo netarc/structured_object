@@ -30,6 +30,15 @@ class StructuredObject
       @buffer.send(@write_type_key, v, @buffer_opts)
     end
 
+    def serialize_struct
+      @buffer.to_s
+    end
+
+    def unserialize_struct(buffer)
+      @buffer.reset!
+      @buffer.send(@write_type_key, buffer.send(@read_type_key, @buffer_opts), @buffer_opts)
+    end
+
     def inspect
       value
     end

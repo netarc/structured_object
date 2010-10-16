@@ -4,7 +4,7 @@ class StructuredObject
     def initialize(klass, format={})
       @klass = klass
       @struct_format = format
-      @current_block = @struct_format
+      @keys = []
     end
 
     @@valid_keys_for_struct = [:size, :length, :endian]
@@ -22,7 +22,9 @@ class StructuredObject
         raise Errors::StructExpectedClass.new if klass.nil?
       end
 
-      @current_block.merge!({attribute => [:struct, klass, options]})
+      @keys << attribute
+#      @struct_format << [attribute, :struct, klass, options]
+      @struct_format.merge!({attribute => [:struct, klass, options]})
 
       @klass.send(:define_method, attribute) do
         initialize_structured_object
@@ -45,10 +47,12 @@ class StructuredObject
       end
 
       raise Errors::AttributeInvalid.new(:type => type,:klass => attribute.class) unless attribute.is_a?(::Symbol)
-      raise Errors::AttributeExists.new(:attribute => attribute, :klass => @klass) if @current_block.has_key?(attribute)
+      raise Errors::AttributeExists.new(:attribute => attribute, :klass => @klass) if @keys.include?(attribute)
       raise Errors::UnknownType.new(:type => type) unless ByteBuffer.known_types.include?(type)
 
-      @current_block.merge!({attribute => [:type, type, options]})
+      @keys << attribute
+#      @struct_format << [attribute, :type, type, options]
+      @struct_format.merge!({attribute => [:type, type, options]})
 
       @klass.send(:define_method, attribute) do
         initialize_structured_object

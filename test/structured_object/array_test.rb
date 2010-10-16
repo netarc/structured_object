@@ -120,17 +120,62 @@ class ArrayTest < Test::Unit::TestCase
       foo = Foo.new
 
       block1 = foo.blocks.new
-      block1 = 41
+      block1.x = 41
       foo.blocks << block1
 
       block2 = foo.blocks.new
-      block2 = 62
+      block2.x = 62
       foo.blocks << block2
 
-      assert_equal 3, foo.blocks.size
+      assert_equal 4, foo.blocks.size
       assert_equal 65, foo.blocks[0].x
-      assert_equal 41, foo.blocks[1].x
-      assert_equal 62, foo.blocks[2].x
+      assert_equal 65, foo.blocks[1].x
+      assert_equal 41, foo.blocks[2].x
+      assert_equal 62, foo.blocks[3].x
+    end
+
+    should "maintain fixed size when removing items from array" do
+      foo = Foo.new
+
+      block1 = foo.blocks.new
+      block1.x = 13
+      block2 = foo.blocks.new
+      block2.x = 76
+      block3 = foo.blocks.new
+      block3.x = 29
+      block4 = foo.blocks.new
+      block4.x = 33
+      foo.blocks = [block1, block2, block3, block4]
+
+      foo.blocks.pop
+      foo.blocks.pop
+
+      assert_equal 4, foo.blocks.size
+      assert_equal 13, foo.blocks[0].x
+      assert_equal 76, foo.blocks[1].x
+      assert_equal 29, foo.blocks[2].x
+      assert_equal 65, foo.blocks[3].x
+
+      foo.blocks = [block1, block2, block3, block4]
+      foo.blocks.slice!(1..2)
+
+      assert_equal 4, foo.blocks.size
+      assert_equal 13, foo.blocks[0].x
+      assert_equal 33, foo.blocks[1].x
+      assert_equal 65, foo.blocks[2].x
+      assert_equal 65, foo.blocks[3].x
+    end
+
+    should "not accept incorrect types for array" do
+      foo = Foo.new
+
+      foo.blocks = [1,2]
+
+      assert_equal 4, foo.blocks.size
+      assert_equal 65, foo.blocks[0].x
+      assert_equal 65, foo.blocks[1].x
+      assert_equal 65, foo.blocks[2].x
+      assert_equal 65, foo.blocks[3].x
     end
   end
 end

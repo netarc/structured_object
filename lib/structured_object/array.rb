@@ -49,6 +49,45 @@ class StructuredObject
       end
     end
 
+    def serialize_struct
+      items = to_a
+      tmp_buffer = ByteBuffer.new
+      tmp_buffer.write_vuint items.size
+      data = tmp_buffer.buffer
+      if @type == :type
+        value_helper = self.new
+        items.each do |item|
+          value_helper.value = item
+          data += value_helper.serialize_struct
+        end
+      elsif @type == :struct
+        items.each do |item|
+          data += item.serialize_struct
+        end
+      end
+      data
+    end
+
+    def unserialize_struct(buffer)
+      count = buffer.read_vuint
+      items = []
+      if @type == :type
+        value_helper = self.new
+        count.times.each do
+          value_helper.unserialize_struct(buffer)
+          items << value_helper.value
+        end
+      elsif @type == :struct
+        count.times.each do
+          item = self.new
+          item.unserialize_struct(buffer)
+          items << item
+        end
+      end
+      @data = items
+    end
+
+
     # Return a new instance of our Struct new
     def new
       raise StandardError.new("No valid struct is present, unable to create new instance") if @type_klass.nil?
@@ -85,6 +124,21 @@ class StructuredObject
             end
           end
         end
+      elsif @type == :struct
+        unless @options[:size].nil?
+          # Ensure we are at min size
+          while @data.size < @options[:size]
+            @data << self.new
+          end
+          # Ensure we are at miax size
+          while @data.size > @options[:size]
+            if position == :start
+              @data.shift
+            else
+              @data.pop
+            end
+          end
+        end
       end
     end
     private :_enforce_size!
@@ -107,11 +161,13 @@ class StructuredObject
         end
 
         @data = new_data
-        _enforce_size!
       elsif @type == :struct
-        puts "converting struct array to array"
-        #       raise StandardError.new("unsupported") unless @type == :type
+        @data.each do |element|
+          new_data << element if element.is_a?(@type_klass)
+        end
+        @data = new_data
       end
+      _enforce_size!
       @data
     end
 

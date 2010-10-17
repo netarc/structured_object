@@ -66,6 +66,6 @@ class BaseTest < Test::Unit::TestCase
     should "create from base class" do
       foo = Foo.new
 
-     end
+    end
   end
 end

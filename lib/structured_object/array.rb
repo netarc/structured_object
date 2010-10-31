@@ -14,7 +14,8 @@ class StructuredObject
 
       @options = {
         :size => StructuredObject::Tools.resolve_proxy(@instance, options[:size] || nil),
-        :length => StructuredObject::Tools.resolve_proxy(@instance, options[:length] || nil)
+        :length => StructuredObject::Tools.resolve_proxy(@instance, options[:length] || nil),
+        :storage => StructuredObject::Tools.resolve_proxy(@instance, options[:storage] || nil)
       }
 
       unless @options[:size].nil?
@@ -53,7 +54,11 @@ class StructuredObject
       items = to_a
       tmp_buffer = ByteBuffer.new
       unless @options[:length].nil?
-        tmp_buffer.write_vuint items.size
+        if @options[:storage].nil?
+          tmp_buffer.write_vuint items.size
+        else
+          tmp_buffer.send(:"write_#{@options[:storage].to_s}", items.size)
+        end
       end
       data = tmp_buffer.buffer
       if @type == :type
@@ -72,7 +77,11 @@ class StructuredObject
 
     def unserialize_struct(buffer)
       if @options[:size].nil?
-        count = buffer.read_vuint
+        if @options[:storage].nil?
+          count = buffer.read_vuint
+        else
+          count = buffer.send(:"read_#{@options[:storage].to_s}")
+        end
       else
         count = @options[:size]
       end

@@ -7,7 +7,7 @@ class StructuredObject
       @keys = []
     end
 
-    @@valid_keys_for_struct = [:size, :length, :endian]
+    @@valid_keys_for_struct = [:size, :length, :endian, :storage]
     def struct(attribute, *args, &block)
       options = args.last.is_a?(::Hash) ? args.pop : {}
       Tools.assert_valid_keys(options, @@valid_keys_for_struct)
@@ -36,7 +36,7 @@ class StructuredObject
       end
     end
 
-    @@valid_keys_for_type = [:default, :size, :length, :endian]
+    @@valid_keys_for_type = [:default, :size, :length, :endian, :storage]
     def type(attribute, type, options={})
       Tools.assert_valid_keys(options, @@valid_keys_for_type)
 

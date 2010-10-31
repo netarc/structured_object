@@ -21,6 +21,8 @@ class SerializeTest < Test::Unit::TestCase
       struct :s3, :length => 0 do
         char :x
       end
+
+      byte :blocks, :length => 0, :storage => :uint32
     end
   end
 
@@ -60,13 +62,17 @@ class SerializeTest < Test::Unit::TestCase
       foo.s3[1].x = -20
       foo.s3[2].x = -30
 
+
+      goal += "\x04\x00\x00\x00" + "\x05\x06\x07\x08"
+      foo.blocks = [5,6,7,8]
+
       assert_equal goal.unpack('H*')[0], foo.serialize_struct.unpack('H*')[0]
     end
   end
 
   context "should unserialize object" do
     should "unserialize" do
-      goal = "\x22\x22\x33\x33\x44\x44\x00\x00\x01\x02\x99\x11\x7B\xEC\xF6\xEC\x03\xF6\xEC\xE2"
+      goal = "\x22\x22\x33\x33\x44\x44\x00\x00\x01\x02\x99\x11\x7B\xEC\xF6\xEC\x03\xF6\xEC\xE2\x04\x00\x00\x00\x05\x06\x07\x08"
 
       foo = Foo.new
       foo.unserialize_struct(goal)
@@ -95,6 +101,12 @@ class SerializeTest < Test::Unit::TestCase
       assert_equal -10, foo.s3[0].x
       assert_equal -20, foo.s3[1].x
       assert_equal -30, foo.s3[2].x
+
+      assert_equal 4, foo.blocks.size
+      assert_equal 5, foo.blocks[0]
+      assert_equal 6, foo.blocks[1]
+      assert_equal 7, foo.blocks[2]
+      assert_equal 8, foo.blocks[3]
     end
   end
 end

@@ -9,7 +9,7 @@ class StructuredObject
       # This will allow a Proc && Symbol to be matched against an object for a potential value otherwise simply return the value
       def resolve_proxy(object, value)
         value = object.instance_eval(&value) if value.is_a?(::Proc)
-        value = object.send(value) if value.is_a?(::Symbol)
+        value = object.send(value) if value.is_a?(::Symbol) && object.respond_to?(value)
         value
       end
     end

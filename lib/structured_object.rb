@@ -47,14 +47,14 @@ class StructuredObject
       "#<#{self.class}:0x#{'%x' % (self.object_id << 1)} #{key_values.map{|e| e.join('=')}.join(' ')}>"
     end
 
-    def serialize_struct
-      data = ""
+    def serialize_struct(buffer=nil)
+      buffer = ByteBuffer.new unless buffer.is_a?(::ByteBuffer)
       initialize_structured_object
       keys = self.class.structured_format.instance_variable_get(:@keys)
       keys.each do |key|
-        data += @structured_object[key].serialize_struct
+        @structured_object[key].serialize_struct(buffer)
       end
-      data
+      buffer.to_s
     end
 
     def unserialize_struct(data)

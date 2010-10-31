@@ -50,29 +50,27 @@ class StructuredObject
       end
     end
 
-    def serialize_struct
+    def serialize_struct(buffer)
       items = to_a
-      tmp_buffer = ByteBuffer.new
       unless @options[:length].nil?
         if @options[:storage].nil?
-          tmp_buffer.write_vuint items.size
+          buffer.write_vuint items.size
         else
-          tmp_buffer.send(:"write_#{@options[:storage].to_s}", items.size)
+          buffer.send(:"write_#{@options[:storage].to_s}", items.size)
         end
       end
-      data = tmp_buffer.buffer
+
       if @type == :type
         value_helper = self.new
         items.each do |item|
           value_helper.value = item
-          data += value_helper.serialize_struct
+          value_helper.serialize_struct(buffer)
         end
       elsif @type == :struct
         items.each do |item|
-          data += item.serialize_struct
+          item.serialize_struct(buffer)
         end
       end
-      data
     end
 
     def unserialize_struct(buffer)

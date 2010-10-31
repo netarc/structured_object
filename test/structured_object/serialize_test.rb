@@ -39,7 +39,7 @@ class SerializeTest < Test::Unit::TestCase
       goal += "\x44\x44"
       foo.l3 = 17476
 
-      goal += "\x03" + "\x00\x00\x01"
+      goal += "\x00\x00\x01"
       foo.a1 = [0,0,1]
 
       goal += "\x02" + "\x99\x11"
@@ -50,7 +50,7 @@ class SerializeTest < Test::Unit::TestCase
       foo.s1.x = 123
       foo.s1.y = -20
 
-      goal += "\x02" + "\xF6\xEC"
+      goal += "\xF6\xEC"
       foo.s2[0].x = -10
       foo.s2[1].x = -20
 
@@ -66,7 +66,7 @@ class SerializeTest < Test::Unit::TestCase
 
   context "should unserialize object" do
     should "unserialize" do
-      goal = "\x22\x22\x33\x33\x44\x44\x03\x00\x00\x01\x02\x99\x11\x7B\xEC\x02\xF6\xEC\x03\xF6\xEC\xE2"
+      goal = "\x22\x22\x33\x33\x44\x44\x00\x00\x01\x02\x99\x11\x7B\xEC\xF6\xEC\x03\xF6\xEC\xE2"
 
       foo = Foo.new
       foo.unserialize_struct(goal)

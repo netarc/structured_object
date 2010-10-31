@@ -52,7 +52,9 @@ class StructuredObject
     def serialize_struct
       items = to_a
       tmp_buffer = ByteBuffer.new
-      tmp_buffer.write_vuint items.size
+      unless @options[:length].nil?
+        tmp_buffer.write_vuint items.size
+      end
       data = tmp_buffer.buffer
       if @type == :type
         value_helper = self.new
@@ -69,7 +71,11 @@ class StructuredObject
     end
 
     def unserialize_struct(buffer)
-      count = buffer.read_vuint
+      if @options[:size].nil?
+        count = buffer.read_vuint
+      else
+        count = @options[:size]
+      end
       items = []
       if @type == :type
         value_helper = self.new

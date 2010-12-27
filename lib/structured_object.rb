@@ -18,7 +18,7 @@ class StructuredObject
       return if @structured_object
       @structured_object= {}
 
-      struct_format = self.class.structured_format.instance_variable_get(:@struct_format)
+      struct_format = self.class.struct_format
       struct_format.each_pair do |key, v|
         type = v[0]
         options = v[2]
@@ -50,7 +50,7 @@ class StructuredObject
     def serialize_struct(buffer=nil)
       buffer = ByteBuffer.new unless buffer.is_a?(::ByteBuffer)
       initialize_structured_object
-      keys = self.class.structured_format.instance_variable_get(:@keys)
+      keys = self.class.struct_keys
       keys.each do |key|
         @structured_object[key].serialize_struct(buffer)
       end
@@ -67,7 +67,7 @@ class StructuredObject
       end
 
       initialize_structured_object
-      keys = self.class.structured_format.instance_variable_get(:@keys)
+      keys = self.class.struct_keys
       keys.each do |key|
         @structured_object[key].unserialize_struct(buffer)
       end
@@ -81,6 +81,14 @@ class StructuredObject
 
       def has_structured_format?
         @@structured_formats.has_key?(self)
+      end
+
+      def struct_format
+        superclass.method_defined?(:initialize_structured_object) && superclass.has_structured_format? ? superclass.struct_format.merge(structured_format.instance_variable_get(:@struct_format)) : structured_format.instance_variable_get(:@struct_format)
+      end
+
+      def struct_keys
+        superclass.method_defined?(:initialize_structured_object) && superclass.has_structured_format? ? superclass.struct_keys.concat(structured_format.instance_variable_get(:@keys)) : structured_format.instance_variable_get(:@keys)
       end
 
       # Entry to the DSL

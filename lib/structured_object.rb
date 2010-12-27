@@ -88,7 +88,7 @@ class StructuredObject
       end
 
       def struct_keys
-        superclass.method_defined?(:initialize_structured_object) && superclass.has_structured_format? ? superclass.struct_keys.concat(structured_format.instance_variable_get(:@keys)) : structured_format.instance_variable_get(:@keys)
+        superclass.method_defined?(:initialize_structured_object) && superclass.has_structured_format? ? superclass.struct_keys + structured_format.instance_variable_get(:@keys) : structured_format.instance_variable_get(:@keys)
       end
 
       # Entry to the DSL

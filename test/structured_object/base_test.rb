@@ -1,10 +1,36 @@
 require "test_helper"
 
 class BaseTest < Test::Unit::TestCase
+  class BaseFoo < StructuredObject
+    struct do
+      byte :x
+    end
+  end
+
+  class SuperFoo < BaseFoo
+    struct do
+      byte :y
+    end
+  end
 
   class Block < StructuredObject
     struct do
       byte [:x,:y,:z]
+    end
+  end
+
+  class BitObj < StructuredObject
+    struct do
+      bit :reserved1
+      # These 2 flags are only valid in Stand Alone players with Version 10+
+      bit :use_direct_blit
+      bit :use_gpu
+      #
+      bit :has_metadata
+      bit :actionscript3
+      bit :reserved2, :array => {:fixed_size => 2}
+      bit :use_network
+      bit :reserved3, :array => {:fixed_size => 24}
     end
   end
 
@@ -21,7 +47,7 @@ class BaseTest < Test::Unit::TestCase
     #
     struct do
       # a fixed array of 3-bytes
-      byte   :id, :length => 0
+      byte   :id, :array => {:fixed_size => 3}
 
       # a 16-bit unsigned integer which value is read-only
 #      uint16 :size, :read => lambda { blocks.size }
@@ -64,7 +90,6 @@ class BaseTest < Test::Unit::TestCase
 
   context "initialization" do
     should "create from base class" do
-      foo = Foo.new
 
     end
   end

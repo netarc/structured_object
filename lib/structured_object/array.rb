@@ -3,8 +3,8 @@ class StructuredObject
   class Array
     include Enumerable
 
+    @@valid_keys_for_array = [:fixed_size, :initial_size, :storage]
     def initialize(instance, format=[])
-#      puts "Creating Array with format: #{format.inspect}"
       @format = format
       @instance = instance
       @type_klass = nil
@@ -12,22 +12,24 @@ class StructuredObject
       @data = []
       options = @format[2]
 
+      array_options = options[:array].is_a?(::Hash) ? options[:array] : {}
+      Tools.assert_valid_keys(array_options, @@valid_keys_for_array)
       @options = {
-        :size => StructuredObject::Tools.resolve_proxy(@instance, options[:size] || nil),
-        :length => StructuredObject::Tools.resolve_proxy(@instance, options[:length] || nil),
-        :storage => StructuredObject::Tools.resolve_proxy(@instance, options[:storage] || nil)
+        :fixed_size => StructuredObject::Tools.resolve_proxy(@instance, array_options[:fixed_size] || nil),
+        :initial_size => array_options[:initial_size] || nil,
+        :storage => StructuredObject::Tools.resolve_proxy(@instance, array_options[:storage].nil? ? nil : array_options[:storage])
       }
 
-      unless @options[:size].nil?
-        raise StandardError.new("An array size must be specified in Numeric format") unless @options[:size].is_a?(::Numeric)
-        raise StandardError.new("An array cannot have a size less than 1") if @options[:size] < 1
-        @options[:size] = @options[:size].floor
+      unless @options[:fixed_size].nil?
+        raise StandardError.new("An array size must be specified in Numeric format") unless @options[:fixed_size].is_a?(::Numeric)
+        raise StandardError.new("An array cannot have a fixed size less than 1") if @options[:fixed_size] < 1
+        @options[:fixed_size] = @options[:fixed_size].floor
       end
 
-      unless @options[:length].nil?
-        raise StandardError.new("An array length must be specified in Numeric format") unless @options[:length].is_a?(::Numeric)
-        raise StandardError.new("An array cannot ave a size less than 0") if @options[:length] < 0
-        @options[:length] = @options[:length].floor
+      unless @options[:initial_size].nil? || @options[:initial_size].is_a?(::Proc)
+        raise StandardError.new("An array size must be specified in Numeric format") unless @options[:initial_size].is_a?(::Numeric)
+        raise StandardError.new("An array cannot have a initial size less than 0") if @options[:initial_size] < 0
+        @options[:initial_size] = @options[:initial_size].floor
       end
 
       if @type == :type
@@ -36,14 +38,14 @@ class StructuredObject
         @type_klass = @format[1]
       end
 
-      unless @options[:size].nil?
+      unless @options[:fixed_size].nil?
         if @type == :type
           value_helper = self.new
-          @options[:size].times.each do
+          @options[:fixed_size].times.each do
             @data << value_helper.value
           end
         elsif @type == :struct
-          @options[:size].times.each do
+          @options[:fixed_size].times.each do
             @data << self.new
           end
         end
@@ -52,9 +54,11 @@ class StructuredObject
 
     def serialize_struct(buffer)
       items = to_a
-      unless @options[:length].nil?
+
+      if @options[:fixed_size].nil?
         if @options[:storage].nil?
           buffer.write_vuint items.size
+        elsif @options[:storage] == false
         else
           buffer.send(:"write_#{@options[:storage].to_s}", items.size)
         end
@@ -74,14 +78,18 @@ class StructuredObject
     end
 
     def unserialize_struct(buffer)
-      if @options[:size].nil?
-        if @options[:storage].nil?
+      if @options[:fixed_size].nil?
+        if !@options[:initial_size].nil?
+          count = StructuredObject::Tools.resolve_proxy(@instance, @options[:initial_size])
+        elsif @options[:storage].nil?
           count = buffer.read_vuint
+        elsif @options[:storage] == false
+          count = 0
         else
           count = buffer.send(:"read_#{@options[:storage].to_s}")
         end
       else
-        count = @options[:size]
+        count = @options[:fixed_size]
       end
       items = []
       if @type == :type
@@ -122,14 +130,14 @@ class StructuredObject
     # Enforce the size constraints on the array
     def _enforce_size!(position=:else)
       if @type == :type
-        unless @options[:size].nil?
+        unless @options[:fixed_size].nil?
           # Ensure we are at min size
           value_helper = self.new
-          while @data.size < @options[:size]
+          while @data.size < @options[:fixed_size]
             @data << value_helper.value
           end
           # Ensure we are at miax size
-          while @data.size > @options[:size]
+          while @data.size > @options[:fixed_size]
             if position == :start
               @data.shift
             else
@@ -138,13 +146,13 @@ class StructuredObject
           end
         end
       elsif @type == :struct
-        unless @options[:size].nil?
+        unless @options[:fixed_size].nil?
           # Ensure we are at min size
-          while @data.size < @options[:size]
+          while @data.size < @options[:fixed_size]
             @data << self.new
           end
           # Ensure we are at miax size
-          while @data.size > @options[:size]
+          while @data.size > @options[:fixed_size]
             if position == :start
               @data.shift
             else

@@ -7,7 +7,7 @@ class StructuredObject
       @keys = []
     end
 
-    @@valid_keys_for_struct = [:size, :length, :endian, :storage]
+    @@valid_keys_for_struct = [:endian, :array]
     def struct(attribute, *args, &block)
       options = args.last.is_a?(::Hash) ? args.pop : {}
       Tools.assert_valid_keys(options, @@valid_keys_for_struct)
@@ -23,7 +23,6 @@ class StructuredObject
       end
 
       @keys << attribute
-#      @struct_format << [attribute, :struct, klass, options]
       @struct_format.merge!({attribute => [:struct, klass, options]})
 
       @klass.send(:define_method, attribute) do
@@ -36,7 +35,7 @@ class StructuredObject
       end
     end
 
-    @@valid_keys_for_type = [:default, :size, :length, :endian, :storage]
+    @@valid_keys_for_type = [:value, :default, :endian, :array]
     def type(attribute, type, options={})
       Tools.assert_valid_keys(options, @@valid_keys_for_type)
 
@@ -51,7 +50,6 @@ class StructuredObject
       raise Errors::UnknownType.new(:type => type) unless ByteBuffer.known_types.include?(type)
 
       @keys << attribute
-#      @struct_format << [attribute, :type, type, options]
       @struct_format.merge!({attribute => [:type, type, options]})
 
       @klass.send(:define_method, attribute) do

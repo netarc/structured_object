@@ -129,8 +129,8 @@ class TypeTest < Test::Unit::TestCase
       foo.bar = "\xDD\xBB\xCC\xAA"
       foo.foo = "\xDD\xBB\xCC\xAA"
 
-      assert -574894934, foo.bar
-      assert -1429423139, foo.foo
+      assert_equal 3720072362, foo.bar
+      assert_equal 2865544157, foo.foo
     end
   end
 end

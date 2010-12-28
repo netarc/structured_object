@@ -6,23 +6,26 @@ class SerializeTest < Test::Unit::TestCase
       uint16 :l1
       uint16 :l2
       int16 :l3
-      byte :a1, :size => 3
-      char :a2, :length => 0
+      byte :a1, :array => {:fixed_size => 3}
+      char :a2, :array => true
 
       struct :s1 do
         byte :x
         char :y
       end
 
-      struct :s2, :size => 2 do
+      struct :s2, :array => {:fixed_size => 2} do
         char :x
       end
 
-      struct :s3, :length => 0 do
+      struct :s3, :array => true do
         char :x
       end
 
-      byte :blocks, :length => 0, :storage => :uint32
+      byte :blocks, :array => {:storage => :uint32}
+
+      byte :stack_count, :value => Proc.new { stacks.length }
+      byte :stacks, :array => {:initial_size => Proc.new { stack_count }, :storage => false}
     end
   end
 
@@ -66,13 +69,16 @@ class SerializeTest < Test::Unit::TestCase
       goal += "\x04\x00\x00\x00" + "\x05\x06\x07\x08"
       foo.blocks = [5,6,7,8]
 
+      goal += "\x03" + "\x01\x02\x03"
+      foo.stacks = [1,2,3]
+
       assert_equal goal.unpack('H*')[0], foo.serialize_struct.unpack('H*')[0]
     end
   end
 
   context "should unserialize object" do
     should "unserialize" do
-      goal = "\x22\x22\x33\x33\x44\x44\x00\x00\x01\x02\x99\x11\x7B\xEC\xF6\xEC\x03\xF6\xEC\xE2\x04\x00\x00\x00\x05\x06\x07\x08"
+      goal = "\x22\x22\x33\x33\x44\x44\x00\x00\x01\x02\x99\x11\x7B\xEC\xF6\xEC\x03\xF6\xEC\xE2\x04\x00\x00\x00\x05\x06\x07\x08\x03\x01\x02\x03"
 
       foo = Foo.new
       foo.unserialize_struct(goal)
@@ -107,6 +113,11 @@ class SerializeTest < Test::Unit::TestCase
       assert_equal 6, foo.blocks[1]
       assert_equal 7, foo.blocks[2]
       assert_equal 8, foo.blocks[3]
+
+      assert_equal 3, foo.stack_count
+      assert_equal 1, foo.stacks[0]
+      assert_equal 2, foo.stacks[1]
+      assert_equal 3, foo.stacks[2]
     end
   end
 end

@@ -24,7 +24,7 @@ class StructuredObject
         options = v[2]
 
         # Are we an array?
-        unless (options[:length] || options[:size]).nil?
+        unless (options[:array]).nil?
           @structured_object[key] = StructuredObject::Array.new(self, v)
         else
           if type == :type

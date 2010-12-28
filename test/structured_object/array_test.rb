@@ -3,12 +3,21 @@ require "test_helper"
 class ArrayTest < Test::Unit::TestCase
   class Foo < StructuredObject
     struct do
-      byte :bar, :size => 3, :default => 123
-      byte :barbar, :size => 5, :default => 123
+      byte :bar, :default => 123, :array => {:fixed_size => 3}
+      byte :barbar, :default => 123, :array => {:fixed_size => 5}
 
-      struct :blocks, :size => 4 do
+      struct :blocks, :array => {:fixed_size => 4} do
         byte :x, :default => 321
       end
+    end
+  end
+
+  class Bar < StructuredObject
+    struct do
+      byte :foo_count, :value => lambda { foo.length }
+      byte :foos, :array => {:initial_size => lambda { foo_count }, :storage => false}
+
+      byte :blocks, :array => {:initial_size => 0}
     end
   end
 

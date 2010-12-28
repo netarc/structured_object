@@ -12,15 +12,6 @@ class ArrayTest < Test::Unit::TestCase
     end
   end
 
-  class Bar < StructuredObject
-    struct do
-      byte :foo_count, :value => lambda { foo.length }
-      byte :foos, :array => {:initial_size => lambda { foo_count }, :storage => false}
-
-      byte :blocks, :array => {:initial_size => 0}
-    end
-  end
-
   context "non-nested arrayed types" do
     should "allocate fixed size array and initialize with defaults" do
       foo = Foo.new
